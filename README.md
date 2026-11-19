@@ -1,4 +1,4 @@
-# GoogleOpener (OpenInGoogle-V2-Apocrypha)
+# GoogleOpener (unofficial)
 
 > **注意 / Disclaimer（非公式ツール）**  
 > **GoogleOpener** は個人開発による **Google 非公式のオープンソースユーティリティ** です。Google LLC によって提供・承認・サポートされているものではありません。  
@@ -54,11 +54,11 @@
 
 ## English
 
-**GoogleOpener** (repository: `OpenInGoogle-V2-Apocrypha`) is an **unofficial** Windows utility that lets you open local Microsoft Office files (`.docx`, `.xlsx`, `.pptx`, etc.) directly in Google Docs, Sheets, or Slides via **double-click** or the **right-click context menu**.
+**GoogleOpener** is an **unofficial** Windows utility that lets you open local Microsoft Office files (`.docx`, `.xlsx`, `.pptx`, etc.) directly in Google Docs, Sheets, or Slides via **double-click** or the **right-click context menu**.
 
-This repository (`OpenInGoogle-V2-Apocrypha`) is an enhanced fork of [drandall70-max/OpenInGoogle-V2](https://github.com/drandall70-max/OpenInGoogle-V2).
+This repository is an enhanced fork of [drandall70-max/OpenInGoogle-V2](https://github.com/drandall70-max/OpenInGoogle-V2).
 
-### What's New in Apocrypha
+### What's New in GoogleOpener
 
 1. **Duplicate Detection & Smart Update (SQLite Cache)**
    - Solves the original limitation where opening the same file created a new Google Drive file every time.

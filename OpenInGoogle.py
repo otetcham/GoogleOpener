@@ -5,96 +5,43 @@ import subprocess
 import sys
 import webbrowser
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+from cache_db import CacheDB
+from config import (
+    APPDATA_DIR,
+    APP_NAME,
+    GOOGLE_API_LIBRARY_URL,
+    GOOGLE_CLOUD_CONSOLE_URL,
+    GOOGLE_CREDENTIALS_URL,
+    HELP_FILE,
+    AppSettings,
+    load_settings,
+)
+from drive_client import UICallbacks, process_file_open
+from gui_settings import SettingsWindow
+from i18n import t
+from win_integration import register_context_menu, unregister_context_menu
 
-SCOPES = ["https://www.googleapis.com/auth/drive.file"]
-APP_NAME = "OpenInGoogle"
 
-APPDATA_DIR = Path(os.environ.get("APPDATA", str(Path.home()))) / APP_NAME
-APPDATA_DIR.mkdir(parents=True, exist_ok=True)
-
-CREDENTIALS_FILE = APPDATA_DIR / "credentials.json"
-TOKEN_FILE = APPDATA_DIR / "token.json"
-HELP_FILE = APPDATA_DIR / "SAVE_YOUR_GOOGLE_CREDENTIALS_HERE.txt"
-
-GOOGLE_CLOUD_CONSOLE_URL = "https://console.cloud.google.com/"
-GOOGLE_API_LIBRARY_URL = "https://console.cloud.google.com/apis/library/drive.googleapis.com"
-GOOGLE_CREDENTIALS_URL = "https://console.cloud.google.com/apis/credentials"
-
-GOOGLE_MIME_TYPES: Dict[str, str] = {
-    ".docx": "application/vnd.google-apps.document",
-    ".doc": "application/vnd.google-apps.document",
-    ".rtf": "application/vnd.google-apps.document",
-    ".xlsx": "application/vnd.google-apps.spreadsheet",
-    ".xls": "application/vnd.google-apps.spreadsheet",
-    ".xlsm": "application/vnd.google-apps.spreadsheet",
-    ".pptx": "application/vnd.google-apps.presentation",
-    ".ppt": "application/vnd.google-apps.presentation",
-}
-
-HELP_TEXT = f"""SAVE YOUR GOOGLE CREDENTIALS HERE
-
-OpenInGoogle needs a Google OAuth Desktop App credential file.
-
-Required final file name:
-
-    credentials.json
-
-Required final location:
-
-    {CREDENTIALS_FILE}
-
-BEGINNER SETUP SUMMARY
-
-1. Go to Google Cloud Console:
-   {GOOGLE_CLOUD_CONSOLE_URL}
-
-2. Create or select a project named something like:
-   OpenInGoogle Personal
-
-3. Enable the Google Drive API:
-   {GOOGLE_API_LIBRARY_URL}
-
-4. Configure the OAuth consent screen:
-   - User type: External, unless using managed Google Workspace and you know you need Internal
-   - App name: OpenInGoogle Personal
-   - User support email: your email
-   - Developer contact email: your email
-   - Add yourself as a test user if Google asks
-
-5. Create OAuth credentials:
-   {GOOGLE_CREDENTIALS_URL}
-
-6. Choose:
-   Create Credentials > OAuth client ID > Desktop app
-
-7. Download the JSON file.
-
-8. Rename the downloaded file to:
-   credentials.json
-
-9. Move credentials.json into this folder:
-   {APPDATA_DIR}
-
-10. Try OpenInGoogle again.
-
-Do not share credentials.json or token.json.
-"""
-
-def ensure_help_file() -> None:
+def ensure_help_file(lang: str = "ja") -> None:
     APPDATA_DIR.mkdir(parents=True, exist_ok=True)
-    HELP_FILE.write_text(HELP_TEXT, encoding="utf-8")
+    text = t(
+        "help_text",
+        lang,
+        app_dir=APPDATA_DIR,
+        console_url=GOOGLE_CLOUD_CONSOLE_URL,
+        api_url=GOOGLE_API_LIBRARY_URL,
+        cred_url=GOOGLE_CREDENTIALS_URL,
+    )
+    HELP_FILE.write_text(text, encoding="utf-8")
+
 
 def show_box(title: str, message: str, error: bool = False) -> None:
     try:
         import tkinter as tk
         from tkinter import messagebox
+
         root = tk.Tk()
         root.withdraw()
         if error:
@@ -105,10 +52,12 @@ def show_box(title: str, message: str, error: bool = False) -> None:
     except Exception:
         print(f"{title}\n{message}")
 
+
 def ask_yes_no(title: str, message: str) -> bool:
     try:
         import tkinter as tk
         from tkinter import messagebox
+
         root = tk.Tk()
         root.withdraw()
         result = messagebox.askyesno(title, message)
@@ -118,142 +67,124 @@ def ask_yes_no(title: str, message: str) -> bool:
         print(f"{title}\n{message}")
         return False
 
-def open_credentials_folder() -> None:
-    ensure_help_file()
+
+def ask_yes_no_cancel(title: str, message: str) -> Optional[bool]:
     try:
-        os.startfile(str(APPDATA_DIR))
+        import tkinter as tk
+        from tkinter import messagebox
+
+        root = tk.Tk()
+        root.withdraw()
+        result = messagebox.askyesnocancel(title, message)
+        root.destroy()
+        return result
+    except Exception:
+        print(f"{title}\n{message}")
+        return None
+
+
+def open_credentials_folder(lang: str = "ja") -> None:
+    ensure_help_file(lang)
+    try:
+        os.startfile(str(APPDATA_DIR))  # type: ignore[attr-defined]
     except Exception:
         webbrowser.open(str(APPDATA_DIR))
+
 
 def open_text_file_in_notepad(path: Path) -> None:
     try:
         subprocess.Popen(["notepad.exe", str(path)])
     except Exception:
         try:
-            os.startfile(str(path))
+            os.startfile(str(path))  # type: ignore[attr-defined]
         except Exception:
             webbrowser.open(str(path))
 
-def open_setup_guide() -> None:
-    ensure_help_file()
+
+def open_setup_guide(lang: str = "ja") -> None:
+    ensure_help_file(lang)
     open_text_file_in_notepad(HELP_FILE)
+
 
 def open_google_cloud_pages() -> None:
     webbrowser.open(GOOGLE_CLOUD_CONSOLE_URL)
     webbrowser.open(GOOGLE_API_LIBRARY_URL)
     webbrowser.open(GOOGLE_CREDENTIALS_URL)
 
-def run_credentials_setup_prompt() -> None:
-    ensure_help_file()
-    open_credentials_folder()
-    open_setup_guide()
 
-    msg = (
-        "OpenInGoogle needs a Google OAuth Desktop App credential file.\n\n"
-        "I opened the folder where the file must be saved and opened a setup guide.\n\n"
-        "Required file name: credentials.json\n\n"
-        f"Required folder:\n{APPDATA_DIR}\n\n"
-        "Would you like me to open the Google Cloud setup pages in your browser?"
-    )
-    if ask_yes_no("OpenInGoogle Setup", msg):
+def run_credentials_setup_prompt(lang: str = "ja") -> None:
+    ensure_help_file(lang)
+    open_credentials_folder(lang)
+    open_setup_guide(lang)
+
+    msg = t("setup_prompt_msg", lang, app_dir=APPDATA_DIR)
+    if ask_yes_no(t("setup_prompt_title", lang), msg):
         open_google_cloud_pages()
 
-def choose_file() -> Optional[str]:
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-        root = tk.Tk()
-        root.withdraw()
-        file_path = filedialog.askopenfilename(
-            title="Choose an Office file to open in Google",
-            filetypes=[
-                ("Supported Office files", "*.docx *.doc *.rtf *.xlsx *.xls *.xlsm *.pptx *.ppt"),
-                ("All files", "*.*"),
-            ],
-        )
-        root.destroy()
-        return file_path or None
-    except Exception:
-        return None
 
-def get_drive_service():
-    ensure_help_file()
-    creds = None
+def open_office_file(file_path: str, settings: Optional[AppSettings] = None) -> None:
+    active_settings = settings or load_settings()
+    ensure_help_file(active_settings.language)
+    cache_db = CacheDB()
+    callbacks = UICallbacks(
+        ask_yes_no=ask_yes_no,
+        ask_yes_no_cancel=ask_yes_no_cancel,
+        on_missing_credentials=lambda: run_credentials_setup_prompt(active_settings.language),
+    )
+    process_file_open(
+        file_path=file_path,
+        settings=active_settings,
+        cache_db=cache_db,
+        callbacks=callbacks,
+        open_browser=True,
+    )
 
-    if TOKEN_FILE.exists():
-        creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            if not CREDENTIALS_FILE.exists():
-                run_credentials_setup_prompt()
-                raise FileNotFoundError(
-                    "Google credentials are not set up yet.\n\n"
-                    "I opened the folder where credentials.json must be saved.\n\n"
-                    f"Save it here:\n{CREDENTIALS_FILE}\n\n"
-                    "Then try opening the Office file again."
-                )
-            flow = InstalledAppFlow.from_client_secrets_file(str(CREDENTIALS_FILE), SCOPES)
-            creds = flow.run_local_server(port=0)
-        TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
+def open_settings_gui() -> None:
+    window = SettingsWindow(
+        open_file_callback=lambda p: open_office_file(p, load_settings()),
+        open_setup_guide_callback=open_setup_guide,
+        open_appdata_callback=lambda: open_credentials_folder(load_settings().language),
+    )
+    window.run()
 
-    return build("drive", "v3", credentials=creds)
-
-def upload_convert_and_open(file_path: str) -> None:
-    path = Path(file_path).expanduser().resolve()
-    if not path.exists():
-        raise FileNotFoundError(f"File not found:\n{path}")
-
-    ext = path.suffix.lower()
-    if ext not in GOOGLE_MIME_TYPES:
-        supported = ".docx, .doc, .rtf, .xlsx, .xls, .xlsm, .pptx, .ppt"
-        raise ValueError(f"Unsupported file type: {ext}\n\nSupported file types:\n{supported}")
-
-    service = get_drive_service()
-    media = MediaFileUpload(str(path), resumable=True)
-    metadata = {"name": path.stem, "mimeType": GOOGLE_MIME_TYPES[ext]}
-
-    created = service.files().create(
-        body=metadata,
-        media_body=media,
-        fields="id,name,webViewLink",
-    ).execute()
-
-    link = created.get("webViewLink")
-    if not link:
-        raise RuntimeError("Upload succeeded, but Google did not return a web link.")
-
-    webbrowser.open(link)
 
 def main() -> int:
-    ensure_help_file()
+    settings = load_settings()
+    lang = settings.language
+    ensure_help_file(lang)
 
     if len(sys.argv) >= 2:
         arg = sys.argv[1]
         if arg == "--open-credentials-folder":
-            open_credentials_folder()
+            open_credentials_folder(lang)
             return 0
         if arg == "--setup-credentials":
-            run_credentials_setup_prompt()
+            run_credentials_setup_prompt(lang)
             return 0
         if arg == "--open-google-cloud-setup":
             open_google_cloud_pages()
             return 0
-        file_path = arg
-    else:
-        file_path = choose_file()
+        if arg == "--settings":
+            open_settings_gui()
+            return 0
+        if arg == "--register-context-menu":
+            register_context_menu(settings.enabled_extensions)
+            return 0
+        if arg == "--unregister-context-menu":
+            unregister_context_menu()
+            return 0
 
-    if not file_path:
-        return 0
+        try:
+            open_office_file(arg, settings)
+            return 0
+        except Exception as exc:
+            show_box(t("app_title", lang), str(exc), error=True)
+            return 1
 
-    try:
-        upload_convert_and_open(file_path)
-        return 0
-    except Exception as exc:
-        show_box(APP_NAME, str(exc), error=True)
-        return 1
+    open_settings_gui()
+    return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

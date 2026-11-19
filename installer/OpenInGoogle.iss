@@ -1,7 +1,7 @@
-; Inno Setup script for OpenInGoogle
+; Inno Setup script for OpenInGoogle-V2-Apocrypha
 #define MyAppName "OpenInGoogle"
-#define MyAppVersion "2.0.0"
-#define MyAppPublisher "David Randall"
+#define MyAppVersion "2.1.0"
+#define MyAppPublisher "otetcham (Fork of David Randall's OpenInGoogle-V2)"
 #define MyAppExeName "OpenInGoogle.exe"
 
 [Setup]
@@ -13,7 +13,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir=..\release
-OutputBaseFilename=OpenInGoogleSetup-v{#MyAppVersion}
+OutputBaseFilename=OpenInGoogleSetup-Apocrypha-v{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -21,8 +21,13 @@ PrivilegesRequired=lowest
 UninstallDisplayIcon={app}\{#MyAppExeName}
 ChangesAssociations=yes
 
+[Languages]
+Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
 [Tasks]
-Name: "make_default"; Description: "Make OpenInGoogle the default app for Office files so double-click opens in Google"; GroupDescription: "Default file opening:"; Flags: checkedonce
+Name: "make_default"; Description: "Make OpenInGoogle the default app for Office files (double-click opens in Google)"; GroupDescription: "File associations:"; Flags: checkedonce
+Name: "context_menu"; Description: "Add 'Open in Google' to the Windows right-click context menu"; GroupDescription: "File associations:"; Flags: checkedonce
 
 [Dirs]
 Name: "{userappdata}\OpenInGoogle"
@@ -88,5 +93,9 @@ Root: HKCU; Subkey: "Software\Classes\.ppt"; ValueType: string; ValueName: ""; V
 Root: HKCU; Subkey: "Software\Classes\.pptx"; ValueType: string; ValueName: ""; ValueData: "OpenInGoogle.pptx"; Tasks: make_default
 
 [Run]
+Filename: "{app}\{#MyAppExeName}"; Parameters: "--register-context-menu"; Tasks: context_menu; Flags: runhidden
 Filename: "{sys}\notepad.exe"; Parameters: """{app}\SETUP_FOR_USERS.txt"""; Description: "Open setup instructions"; Flags: postinstall skipifsilent
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--setup-credentials"; Description: "Start Google credentials setup"; Flags: postinstall skipifsilent
+
+[UninstallRun]
+Filename: "{app}\{#MyAppExeName}"; Parameters: "--unregister-context-menu"; Flags: runhidden

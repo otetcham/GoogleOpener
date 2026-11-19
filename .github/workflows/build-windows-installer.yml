@@ -19,6 +19,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib pyinstaller
           python -m pip show pyinstaller
+      - name: Run unit tests
+        run: |
+          python -m unittest discover -s tests -v
       - name: Build OpenInGoogle.exe
         run: |
           pyinstaller OpenInGoogle.spec --clean --noconfirm

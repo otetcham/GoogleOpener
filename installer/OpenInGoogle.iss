@@ -1,6 +1,6 @@
 ; Inno Setup script for OpenInGoogle-V2-Apocrypha
 #define MyAppName "OpenInGoogle"
-#define MyAppVersion "2.1.0"
+#define MyAppVersion "2.2.0"
 #define MyAppPublisher "otetcham (Fork of David Randall's OpenInGoogle-V2)"
 #define MyAppExeName "OpenInGoogle.exe"
 
@@ -94,6 +94,7 @@ Root: HKCU; Subkey: "Software\Classes\.pptx"; ValueType: string; ValueName: ""; 
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--register-context-menu"; Tasks: context_menu; Flags: runhidden
+Filename: "{app}\{#MyAppExeName}"; Parameters: "--apply-icons"; Flags: runhidden
 Filename: "{sys}\notepad.exe"; Parameters: """{app}\SETUP_FOR_USERS.txt"""; Description: "Open setup instructions"; Flags: postinstall skipifsilent
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--setup-credentials"; Description: "Start Google credentials setup"; Flags: postinstall skipifsilent
 

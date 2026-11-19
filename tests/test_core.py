@@ -17,6 +17,8 @@ from config import (
 )
 from drive_client import UICallbacks, process_file_open
 from i18n import t
+from updater import is_update_available, parse_version
+from win_integration import EXTENSION_ICON_MAP
 
 
 class TestConfigAndI18n(unittest.TestCase):
@@ -43,6 +45,17 @@ class TestConfigAndI18n(unittest.TestCase):
     def test_i18n_lookup(self) -> None:
         self.assertIn("OpenInGoogle", t("app_title", "ja"))
         self.assertIn("OpenInGoogle", t("app_title", "en"))
+
+    def test_updater_version_comparison(self) -> None:
+        self.assertEqual(parse_version("v2.2.0"), (2, 2, 0))
+        self.assertTrue(is_update_available("v2.3.0", "2.2.0"))
+        self.assertFalse(is_update_available("v2.2.0", "2.2.0"))
+        self.assertFalse(is_update_available("v2.1.0", "2.2.0"))
+
+    def test_icon_mapping_covers_office_types(self) -> None:
+        self.assertEqual(EXTENSION_ICON_MAP[".docx"], "docs.ico")
+        self.assertEqual(EXTENSION_ICON_MAP[".xlsx"], "sheets.ico")
+        self.assertEqual(EXTENSION_ICON_MAP[".pptx"], "slides.ico")
 
 
 class TestDuplicateCheckAndUpload(unittest.TestCase):

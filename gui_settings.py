@@ -9,6 +9,7 @@ from typing import Callable, Dict
 from cache_db import CacheDB
 from config import (
     APPDATA_DIR,
+    APP_VERSION,
     CREDENTIALS_FILE,
     DUPLICATE_MODE_ALWAYS_NEW,
     DUPLICATE_MODE_ASK,
@@ -23,10 +24,12 @@ from config import (
 )
 from drive_client import get_drive_service, sign_out
 from i18n import t
+from updater import download_and_apply_update, fetch_latest_release, is_update_available
 from win_integration import (
     is_context_menu_registered,
     open_windows_default_apps,
     register_context_menu,
+    register_file_icons,
     unregister_context_menu,
 )
 
@@ -144,6 +147,15 @@ class SettingsWindow:
             lang_frame, text=self._tr("lang_en"), variable=self.lang_var, value="en"
         ).pack(side=tk.LEFT)
 
+        ver_frame = ttk.Frame(parent, padding=(0, 12))
+        ver_frame.pack(fill=tk.X)
+        ttk.Label(ver_frame, text=self._tr("version_label", version=APP_VERSION)).pack(
+            side=tk.LEFT, padx=(0, 12)
+        )
+        ttk.Button(
+            ver_frame, text=self._tr("btn_check_update"), command=self._on_check_update
+        ).pack(side=tk.LEFT)
+
     def _build_upload_tab(self, parent: ttk.Frame) -> None:
         folder_frame = ttk.Frame(parent)
         folder_frame.pack(fill=tk.X, pady=(0, 10))
@@ -216,8 +228,13 @@ class SettingsWindow:
         ttk.Button(
             btn_row, text=self._tr("btn_unregister_ctx"), command=self._on_unregister_ctx
         ).pack(side=tk.LEFT, padx=(0, 6))
+        btn_row2 = ttk.Frame(win_frame)
+        btn_row2.pack(fill=tk.X, pady=(6, 0))
         ttk.Button(
-            btn_row, text=self._tr("btn_open_default_apps"), command=open_windows_default_apps
+            btn_row2, text=self._tr("btn_apply_icons"), command=self._on_apply_icons
+        ).pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(
+            btn_row2, text=self._tr("btn_open_default_apps"), command=open_windows_default_apps
         ).pack(side=tk.LEFT)
 
         ext_frame = ttk.LabelFrame(parent, text=self._tr("extensions_section"), padding=8)
@@ -355,6 +372,45 @@ class SettingsWindow:
             messagebox.showinfo(self._tr("app_title"), self._tr("ctx_unregistered_msg"))
         except Exception as exc:
             messagebox.showerror(self._tr("app_title"), str(exc))
+
+    def _on_apply_icons(self) -> None:
+        try:
+            exts = [ext for ext, var in self.ext_vars.items() if var.get()]
+            register_file_icons(exts)
+            messagebox.showinfo(self._tr("app_title"), self._tr("icons_applied_msg"))
+        except Exception as exc:
+            messagebox.showerror(self._tr("app_title"), str(exc))
+
+    def _on_check_update(self) -> None:
+        try:
+            release = fetch_latest_release()
+            if not is_update_available(release.tag_name, APP_VERSION):
+                messagebox.showinfo(
+                    self._tr("app_title"),
+                    self._tr("update_up_to_date", version=APP_VERSION),
+                )
+                return
+
+            if not messagebox.askyesno(
+                self._tr("app_title"),
+                self._tr("update_available_msg", latest=release.tag_name, current=APP_VERSION),
+            ):
+                return
+
+            should_exit, downloaded_path = download_and_apply_update(release)
+            if should_exit:
+                messagebox.showinfo(self._tr("app_title"), self._tr("update_started_msg"))
+                self.root.destroy()
+            else:
+                messagebox.showinfo(
+                    self._tr("app_title"),
+                    self._tr("update_downloaded_source_msg", path=downloaded_path),
+                )
+        except Exception as exc:
+            messagebox.showerror(
+                self._tr("app_title"),
+                self._tr("update_error_msg", err=exc),
+            )
 
     def _on_open_selected_history(self) -> None:
         selected = self.history_tree.selection()

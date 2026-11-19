@@ -35,4 +35,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: OpenInGoogleSetup
-          path: release\*.exe
+          path: |
+            dist\OpenInGoogle.exe
+            release\*.exe
+      - name: Publish GitHub Release on tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist\OpenInGoogle.exe
+            release\*.exe
+          generate_release_notes: true

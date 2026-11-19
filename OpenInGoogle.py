@@ -21,7 +21,7 @@ from config import (
 from drive_client import UICallbacks, process_file_open
 from gui_settings import SettingsWindow
 from i18n import t
-from win_integration import register_context_menu, unregister_context_menu
+from win_integration import register_context_menu, register_file_icons, unregister_context_menu
 
 
 def ensure_help_file(lang: str = "ja") -> None:
@@ -173,6 +173,9 @@ def main() -> int:
             return 0
         if arg == "--unregister-context-menu":
             unregister_context_menu()
+            return 0
+        if arg == "--apply-icons":
+            register_file_icons(settings.enabled_extensions)
             return 0
 
         try:

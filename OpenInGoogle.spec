@@ -3,7 +3,7 @@ a = Analysis(
     ['OpenInGoogle.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('assets/icons', 'assets/icons')],
     hiddenimports=['googleapiclient','google_auth_oauthlib','google.oauth2','google.auth.transport.requests','tkinter','sqlite3'],
     hookspath=[],
     hooksconfig={},
@@ -19,4 +19,5 @@ exe = EXE(
     strip=False,
     upx=True,
     console=False,
+    icon='assets/icons/docs.ico',
 )

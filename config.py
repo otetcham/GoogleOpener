@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 APP_NAME = "OpenInGoogle"
-APP_VERSION = "2.1.0-jp"
+APP_VERSION = "2.2.0"
+GITHUB_REPO = "otetcham/OpenInGoogle-V2-Apocrypha"
 
 APPDATA_DIR = Path(os.environ.get("APPDATA", str(Path.home()))) / APP_NAME
 APPDATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -18,6 +19,7 @@ TOKEN_FILE = APPDATA_DIR / "token.json"
 SETTINGS_FILE = APPDATA_DIR / "settings.json"
 CACHE_DB_FILE = APPDATA_DIR / "cache.db"
 HELP_FILE = APPDATA_DIR / "SAVE_YOUR_GOOGLE_CREDENTIALS_HERE.txt"
+ICONS_DIR = APPDATA_DIR / "icons"
 
 GOOGLE_CLOUD_CONSOLE_URL = "https://console.cloud.google.com/"
 GOOGLE_API_LIBRARY_URL = "https://console.cloud.google.com/apis/library/drive.googleapis.com"

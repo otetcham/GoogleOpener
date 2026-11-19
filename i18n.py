@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "ja": {
-        "app_title": "OpenInGoogle - Apocrypha",
+        "app_title": "OpenInGoogle Apocrypha",
         "menu_open_file": "Officeファイルを選択して開く",
         "tab_general": "基本・アカウント",
         "tab_upload": "アップロード・重複設定",
@@ -115,7 +115,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         ),
     },
     "en": {
-        "app_title": "OpenInGoogle - Apocrypha",
+        "app_title": "OpenInGoogle Apocrypha",
         "menu_open_file": "Choose Office File to Open",
         "tab_general": "General & Account",
         "tab_upload": "Upload & Duplicates",

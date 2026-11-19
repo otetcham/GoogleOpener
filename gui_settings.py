@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import tkinter as tk
 import webbrowser
 from pathlib import Path
@@ -51,6 +52,12 @@ class SettingsWindow:
         self.root = tk.Tk()
         self.root.geometry("760x620")
         self.root.minsize(700, 560)
+        icon_path = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "assets" / "icons" / "app.ico"
+        if icon_path.exists():
+            try:
+                self.root.iconbitmap(str(icon_path))
+            except Exception:
+                pass
 
         self._build_ui()
 

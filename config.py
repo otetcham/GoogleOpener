@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 APP_NAME = "OpenInGoogle"
-APP_VERSION = "2.2.0"
+APP_DISPLAY_NAME = "OpenInGoogle Apocrypha"
+APP_VERSION = "2.2.1"
 GITHUB_REPO = "otetcham/OpenInGoogle-V2-Apocrypha"
 
 APPDATA_DIR = Path(os.environ.get("APPDATA", str(Path.home()))) / APP_NAME

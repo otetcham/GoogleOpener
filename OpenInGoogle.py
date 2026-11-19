@@ -18,9 +18,10 @@ from config import (
     AppSettings,
     load_settings,
 )
-from drive_client import UICallbacks, process_file_open
+from drive_client import process_file_open
 from gui_settings import SettingsWindow
 from i18n import t
+from progress_popup import run_with_progress_popup
 from win_integration import register_context_menu, register_file_icons, unregister_context_menu
 
 
@@ -122,27 +123,33 @@ def run_credentials_setup_prompt(lang: str = "ja") -> None:
         open_google_cloud_pages()
 
 
-def open_office_file(file_path: str, settings: Optional[AppSettings] = None) -> None:
+def open_office_file(
+    file_path: str,
+    settings: Optional[AppSettings] = None,
+    parent=None,
+) -> None:
     active_settings = settings or load_settings()
     ensure_help_file(active_settings.language)
     cache_db = CacheDB()
-    callbacks = UICallbacks(
-        ask_yes_no=ask_yes_no,
-        ask_yes_no_cancel=ask_yes_no_cancel,
-        on_missing_credentials=lambda: run_credentials_setup_prompt(active_settings.language),
-    )
-    process_file_open(
+
+    run_with_progress_popup(
         file_path=file_path,
-        settings=active_settings,
-        cache_db=cache_db,
-        callbacks=callbacks,
-        open_browser=True,
+        worker_fn=lambda callbacks: process_file_open(
+            file_path=file_path,
+            settings=active_settings,
+            cache_db=cache_db,
+            callbacks=callbacks,
+            open_browser=True,
+        ),
+        lang=active_settings.language,
+        on_missing_credentials=lambda: run_credentials_setup_prompt(active_settings.language),
+        parent=parent,
     )
 
 
 def open_settings_gui() -> None:
     window = SettingsWindow(
-        open_file_callback=lambda p: open_office_file(p, load_settings()),
+        open_file_callback=lambda p, parent=None: open_office_file(p, load_settings(), parent=parent),
         open_setup_guide_callback=open_setup_guide,
         open_appdata_callback=lambda: open_credentials_folder(load_settings().language),
     )

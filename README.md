@@ -1,4 +1,8 @@
-# OpenInGoogle Apocrypha
+# GoogleOpener (OpenInGoogle-V2-Apocrypha)
+
+> **注意 / Disclaimer（非公式ツール）**  
+> **GoogleOpener** は個人開発による **Google 非公式のオープンソースユーティリティ** です。Google LLC によって提供・承認・サポートされているものではありません。  
+> **GoogleOpener** is an **unofficial open-source utility** and is **not** affiliated with, endorsed by, or supported by Google LLC.
 
 [English](#english) | [日本語](#日本語)
 
@@ -6,7 +10,7 @@
 
 ## 日本語
 
-**OpenInGoogle Apocrypha** は、Windows 上の Microsoft Office ファイル（`.docx`, `.xlsx`, `.pptx` など）を**ダブルクリック**または**右クリックメニュー（「Google で開く」）**からワンタップで Google ドキュメント / スプレッドシート / スライド で開くユーティリティです。
+**GoogleOpener** は、Windows 上の Microsoft Office ファイル（`.docx`, `.xlsx`, `.pptx` など）を**ダブルクリック**または**右クリックメニュー（「Google で開く」）**からワンタップで Google ドキュメント / スプレッドシート / スライド で開くユーティリティです。
 
 本リポジトリ（`OpenInGoogle-V2-Apocrypha`）は [drandall70-max/OpenInGoogle-V2](https://github.com/drandall70-max/OpenInGoogle-V2) をフォークし、実用性を大幅に強化した拡張版です。
 
@@ -31,7 +35,9 @@
      - **基本・アカウント**: ファイル選択起動、Google 認証・ログアウト、セットアップ手順、言語切替、アップデート確認
      - **アップロード・重複設定**: Google ドライブ保存先フォルダ名指定、重複チェック方式、Google 形式への変換 ON/OFF、アップロード前確認ダイアログ（誤送信防止）、除外フォルダ設定
      - **Windows連携・履歴**: 右クリックメニュー「Google で開く」の一括登録/解除、ファイル種別アイコン適用、Windows「既定のアプリ」設定呼び出し、対応拡張子の個別 ON/OFF、最近の履歴一覧
-6. **対応拡張子の拡充**
+6. **左下・最前面の進捗ポップアップ＆キャンセル対応**
+   - ファイルを開いた直後から、画面左下に常に最前面で進捗ポップアップ（接続 → 重複確認 → アップロード% → ブラウザ起動）を表示し、処理中でも「キャンセル」ボタンで中断できます。
+7. **対応拡張子の拡充**
    - `.docx`, `.doc`, `.rtf`, `.odt` → Google ドキュメント
    - `.xlsx`, `.xls`, `.xlsm`, `.ods`, `.csv` → Google スプレッドシート
    - `.pptx`, `.ppt`, `.odp` → Google スライド
@@ -48,7 +54,7 @@
 
 ## English
 
-**OpenInGoogle Apocrypha** is a Windows utility that lets you open local Microsoft Office files (`.docx`, `.xlsx`, `.pptx`, etc.) directly in Google Docs, Sheets, or Slides via **double-click** or the **right-click context menu**.
+**GoogleOpener** (repository: `OpenInGoogle-V2-Apocrypha`) is an **unofficial** Windows utility that lets you open local Microsoft Office files (`.docx`, `.xlsx`, `.pptx`, etc.) directly in Google Docs, Sheets, or Slides via **double-click** or the **right-click context menu**.
 
 This repository (`OpenInGoogle-V2-Apocrypha`) is an enhanced fork of [drandall70-max/OpenInGoogle-V2](https://github.com/drandall70-max/OpenInGoogle-V2).
 
@@ -70,7 +76,9 @@ This repository (`OpenInGoogle-V2-Apocrypha`) is an enhanced fork of [drandall70
    - Full Japanese and English localization across the 3-tab settings GUI, dialogs, setup guides, and Inno Setup installer.
 5. **Rich Configuration & Security Controls**
    - Custom target Google Drive folder name, toggle Google format conversion, confirmation prompt before upload, excluded folders list, per-extension toggles, and recent upload history viewer.
-6. **Expanded File Support**
+6. **Bottom-Left Topmost Progress Popup & Cancellation**
+   - Displays a compact always-on-top progress card at the bottom-left corner of your screen (preparing → connecting → duplicate check → upload % → opening browser) with a **Cancel** button.
+7. **Expanded File Support**
    - **Google Docs**: `.docx`, `.doc`, `.rtf`, `.odt`
    - **Google Sheets**: `.xlsx`, `.xls`, `.xlsm`, `.ods`, `.csv`
    - **Google Slides**: `.pptx`, `.ppt`, `.odp`

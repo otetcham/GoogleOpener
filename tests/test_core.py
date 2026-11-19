@@ -15,7 +15,7 @@ from config import (
     load_settings,
     save_settings,
 )
-from drive_client import UICallbacks, process_file_open
+from drive_client import OperationCancelledError, UICallbacks, process_file_open
 from i18n import t
 from updater import is_update_available, parse_version
 from win_integration import EXTENSION_ICON_MAP
@@ -43,8 +43,8 @@ class TestConfigAndI18n(unittest.TestCase):
             self.assertEqual(loaded.enabled_extensions, [".docx", ".xlsx"])
 
     def test_i18n_lookup(self) -> None:
-        self.assertIn("OpenInGoogle", t("app_title", "ja"))
-        self.assertIn("OpenInGoogle", t("app_title", "en"))
+        self.assertIn("GoogleOpener", t("app_title", "ja"))
+        self.assertIn("GoogleOpener", t("app_title", "en"))
 
     def test_updater_version_comparison(self) -> None:
         self.assertEqual(parse_version("v2.2.0"), (2, 2, 0))
@@ -184,6 +184,22 @@ class TestDuplicateCheckAndUpload(unittest.TestCase):
         self.assertIsNotNone(res)
         self.assertEqual(res.action, "uploaded_new")
         self.assertEqual(mock_upload.call_count, 1)
+
+    @patch("drive_client.get_drive_service")
+    def test_cancel_aborts_before_upload(self, mock_service: MagicMock) -> None:
+        progress_events: list[tuple[str, float | None]] = []
+        callbacks = UICallbacks(
+            ask_yes_no=lambda _t, _m: True,
+            ask_yes_no_cancel=lambda _t, _m: True,
+            on_missing_credentials=lambda: None,
+            on_progress=lambda msg, pct: progress_events.append((msg, pct)),
+            is_cancelled=lambda: True,
+        )
+        settings = AppSettings()
+        with self.assertRaises(OperationCancelledError):
+            process_file_open(str(self.sample_file), settings, self.db, callbacks, open_browser=False)
+        self.assertEqual(mock_service.call_count, 0)
+        self.assertGreaterEqual(len(progress_events), 1)
 
 
 if __name__ == "__main__":

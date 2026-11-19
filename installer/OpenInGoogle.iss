@@ -1,6 +1,6 @@
-; Inno Setup script for OpenInGoogle Apocrypha
-#define MyAppName "OpenInGoogle Apocrypha"
-#define MyAppVersion "2.2.1"
+; Inno Setup script for GoogleOpener (OpenInGoogle-V2-Apocrypha)
+#define MyAppName "GoogleOpener"
+#define MyAppVersion "2.3.0"
 #define MyAppPublisher "otetcham (Fork of David Randall's OpenInGoogle-V2)"
 #define MyAppExeName "OpenInGoogle.exe"
 
@@ -52,8 +52,8 @@ Name: "{group}\Troubleshooting"; Filename: "{sys}\notepad.exe"; Parameters: """{
 Name: "{group}\Uninstall OpenInGoogle"; Filename: "{uninstallexe}"
 
 [Registry]
-Root: HKCU; Subkey: "Software\OpenInGoogle\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "OpenInGoogle Apocrypha"; Flags: uninsdeletekey
-Root: HKCU; Subkey: "Software\OpenInGoogle\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "Open Microsoft Office files in Google Docs, Sheets, or Slides"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\OpenInGoogle\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "GoogleOpener"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\OpenInGoogle\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "Unofficial tool to open Microsoft Office files in Google Docs, Sheets, or Slides"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\RegisteredApplications"; ValueType: string; ValueName: "OpenInGoogle"; ValueData: "Software\OpenInGoogle\Capabilities"; Flags: uninsdeletevalue
 
 Root: HKCU; Subkey: "Software\OpenInGoogle\Capabilities\FileAssociations"; ValueType: string; ValueName: ".doc"; ValueData: "OpenInGoogle.doc"; Flags: uninsdeletekey

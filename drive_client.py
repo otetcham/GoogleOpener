@@ -27,6 +27,11 @@ from config import (
 from i18n import t
 
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MiB for smooth progress & cancellation
+
+
+class OperationCancelledError(Exception):
+    """Raised when the user cancels an in-progress open/upload operation."""
 
 
 @dataclass
@@ -41,6 +46,45 @@ class UICallbacks:
     ask_yes_no: Callable[[str, str], bool]
     ask_yes_no_cancel: Callable[[str, str], Optional[bool]]
     on_missing_credentials: Callable[[], None]
+    on_progress: Optional[Callable[[str, Optional[float]], None]] = None
+    is_cancelled: Optional[Callable[[], bool]] = None
+
+
+def _check_cancelled(callbacks: UICallbacks) -> None:
+    if callbacks.is_cancelled and callbacks.is_cancelled():
+        raise OperationCancelledError("Operation cancelled by user.")
+
+
+def _notify_progress(
+    callbacks: UICallbacks,
+    message: str,
+    percent: Optional[float] = None,
+) -> None:
+    if callbacks.on_progress:
+        callbacks.on_progress(message, percent)
+
+
+def _execute_resumable(
+    request,
+    label_key: str,
+    lang: str,
+    callbacks: UICallbacks,
+) -> dict:
+    if not hasattr(request, "next_chunk"):
+        return request.execute()
+
+    response = None
+    while response is None:
+        _check_cancelled(callbacks)
+        status, response = request.next_chunk()
+        if status is not None:
+            pct = min(99.0, float(status.progress()) * 100.0)
+            _notify_progress(
+                callbacks,
+                t(label_key, lang, percent=int(pct)),
+                pct,
+            )
+    return response
 
 
 def sign_out() -> None:
@@ -128,8 +172,10 @@ def upload_new_file(
     path: Path,
     target_mime_type: Optional[str],
     folder_id: str = "",
+    lang: str = "ja",
+    callbacks: Optional[UICallbacks] = None,
 ) -> Tuple[str, str]:
-    media = MediaFileUpload(str(path), resumable=True)
+    media = MediaFileUpload(str(path), resumable=True, chunksize=UPLOAD_CHUNK_SIZE)
     metadata: dict = {
         "name": path.stem if target_mime_type else path.name,
     }
@@ -138,11 +184,15 @@ def upload_new_file(
     if folder_id:
         metadata["parents"] = [folder_id]
 
-    created = service.files().create(
+    request = service.files().create(
         body=metadata,
         media_body=media,
         fields="id, name, webViewLink",
-    ).execute()
+    )
+    if callbacks is not None and hasattr(request, "next_chunk"):
+        created = _execute_resumable(request, "progress_uploading", lang, callbacks)
+    else:
+        created = request.execute()
 
     file_id = created.get("id", "")
     link = created.get("webViewLink", "")
@@ -153,13 +203,19 @@ def update_existing_file(
     service,
     file_id: str,
     path: Path,
+    lang: str = "ja",
+    callbacks: Optional[UICallbacks] = None,
 ) -> Tuple[str, str]:
-    media = MediaFileUpload(str(path), resumable=True)
-    updated = service.files().update(
+    media = MediaFileUpload(str(path), resumable=True, chunksize=UPLOAD_CHUNK_SIZE)
+    request = service.files().update(
         fileId=file_id,
         media_body=media,
         fields="id, name, webViewLink",
-    ).execute()
+    )
+    if callbacks is not None and hasattr(request, "next_chunk"):
+        updated = _execute_resumable(request, "progress_updating", lang, callbacks)
+    else:
+        updated = request.execute()
     return updated.get("id", file_id), updated.get("webViewLink", "")
 
 
@@ -188,6 +244,9 @@ def process_file_open(
     open_browser: bool = True,
 ) -> Optional[OpenResult]:
     lang = settings.language
+    _notify_progress(callbacks, t("progress_preparing", lang), None)
+    _check_cancelled(callbacks)
+
     path = Path(file_path).expanduser().resolve()
     if not path.exists():
         raise FileNotFoundError(t("err_file_not_found", lang, path=path))
@@ -207,7 +266,12 @@ def process_file_open(
         if not confirmed:
             return None
 
+    _check_cancelled(callbacks)
+    _notify_progress(callbacks, t("progress_connecting", lang), None)
     service = get_drive_service(lang=lang, on_missing_credentials=callbacks.on_missing_credentials)
+    _check_cancelled(callbacks)
+
+    _notify_progress(callbacks, t("progress_checking_dup", lang), None)
     norm_path = normalize_local_path(path)
     stat = path.stat()
     sha256 = compute_sha256(path)
@@ -228,8 +292,11 @@ def process_file_open(
                 cached_entry = by_hash
                 matched_same_content = True
 
+    _check_cancelled(callbacks)
+
     if cached_entry:
         remote_link = verify_remote_file(service, cached_entry.drive_file_id)
+        _check_cancelled(callbacks)
         if not remote_link:
             cache_db.delete_by_file_id(cached_entry.drive_file_id)
             cached_entry = None
@@ -246,6 +313,7 @@ def process_file_open(
                     should_open_existing = bool(choice)
 
                 if should_open_existing:
+                    _notify_progress(callbacks, t("progress_opening_existing", lang), 100.0)
                     cache_db.upsert(
                         CacheEntry(
                             local_path=norm_path,
@@ -258,6 +326,7 @@ def process_file_open(
                         )
                     )
                     if open_browser:
+                        _notify_progress(callbacks, t("progress_opening_browser", lang), 100.0)
                         webbrowser.open(remote_link)
                     return OpenResult("opened_existing", cached_entry.drive_file_id, remote_link)
             else:
@@ -277,9 +346,16 @@ def process_file_open(
                     should_update = bool(choice)
 
                 if should_update:
+                    _check_cancelled(callbacks)
+                    _notify_progress(callbacks, t("progress_updating", lang, percent=0), 0.0)
                     updated_id, updated_link = update_existing_file(
-                        service, cached_entry.drive_file_id, path
+                        service,
+                        cached_entry.drive_file_id,
+                        path,
+                        lang=lang,
+                        callbacks=callbacks,
                     )
+                    _check_cancelled(callbacks)
                     link = updated_link or remote_link
                     cache_db.upsert(
                         CacheEntry(
@@ -293,12 +369,24 @@ def process_file_open(
                         )
                     )
                     if open_browser:
+                        _notify_progress(callbacks, t("progress_opening_browser", lang), 100.0)
                         webbrowser.open(link)
                     return OpenResult("updated_existing", updated_id, link)
 
     # Upload as a new file
+    _check_cancelled(callbacks)
+    _notify_progress(callbacks, t("progress_uploading", lang, percent=0), 0.0)
     folder_id = get_or_create_folder(service, settings.drive_folder_name)
-    file_id, link = upload_new_file(service, path, target_mime, folder_id=folder_id)
+    _check_cancelled(callbacks)
+    file_id, link = upload_new_file(
+        service,
+        path,
+        target_mime,
+        folder_id=folder_id,
+        lang=lang,
+        callbacks=callbacks,
+    )
+    _check_cancelled(callbacks)
     if not link:
         raise RuntimeError(t("err_no_link", lang))
 
@@ -314,5 +402,6 @@ def process_file_open(
         )
     )
     if open_browser:
+        _notify_progress(callbacks, t("progress_opening_browser", lang), 100.0)
         webbrowser.open(link)
     return OpenResult("uploaded_new", file_id, link)

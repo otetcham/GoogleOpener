@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import ctypes
+import os
 import sys
 import tkinter as tk
 import webbrowser
@@ -38,7 +40,7 @@ from win_integration import (
 class SettingsWindow:
     def __init__(
         self,
-        open_file_callback: Callable[[str], None],
+        open_file_callback: Callable[..., None],
         open_setup_guide_callback: Callable[[str], None],
         open_appdata_callback: Callable[[], None],
     ) -> None:
@@ -49,13 +51,28 @@ class SettingsWindow:
         self.settings: AppSettings = load_settings()
         self.cache_db = CacheDB()
 
+        if os.name == "nt":
+            try:
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("otetcham.GoogleOpener.App")
+            except Exception:
+                pass
+
         self.root = tk.Tk()
         self.root.geometry("760x620")
         self.root.minsize(700, 560)
-        icon_path = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "assets" / "icons" / "app.ico"
-        if icon_path.exists():
+        icons_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "assets" / "icons"
+        app_png = icons_dir / "app.png"
+        app_ico = icons_dir / "app.ico"
+        self._app_icon_image = None
+        if app_png.exists():
             try:
-                self.root.iconbitmap(str(icon_path))
+                self._app_icon_image = tk.PhotoImage(file=str(app_png))
+                self.root.iconphoto(True, self._app_icon_image)
+            except Exception:
+                pass
+        elif app_ico.exists():
+            try:
+                self.root.iconbitmap(str(app_ico))
             except Exception:
                 pass
 
@@ -92,6 +109,13 @@ class SettingsWindow:
 
         footer = ttk.Frame(container, padding=(0, 10, 0, 0))
         footer.pack(fill=tk.X)
+
+        ttk.Label(
+            container,
+            text=self._tr("unofficial_notice"),
+            foreground="#64748b",
+            font=("Yu Gothic UI", 8),
+        ).pack(anchor=tk.W, pady=(6, 0))
 
         ttk.Button(
             footer,
@@ -446,7 +470,7 @@ class SettingsWindow:
         if not file_path:
             return
         try:
-            self.open_file_callback(file_path)
+            self.open_file_callback(file_path, parent=self.root)
             self._refresh_auth_status()
             self._refresh_history()
         except Exception as exc:
